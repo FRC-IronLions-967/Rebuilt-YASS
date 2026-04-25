@@ -23,29 +23,6 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.commands.DriveCommands;
-import frc.robot.subsystems.Superstructure;
-import frc.robot.subsystems.Superstructure.WantedState;
-import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.GyroIO;
-import frc.robot.subsystems.drive.GyroIONavX;
-import frc.robot.subsystems.drive.ModuleIO;
-import frc.robot.subsystems.drive.ModuleIOSim;
-import frc.robot.subsystems.drive.ModuleIOSpark;
-import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.IntakeIO;
-import frc.robot.subsystems.intake.IntakeIOSim;
-import frc.robot.subsystems.intake.IntakeIOSpark;
-import frc.robot.subsystems.turret.Turret;
-import frc.robot.subsystems.turret.TurretConstants;
-import frc.robot.subsystems.turret.TurretIO;
-import frc.robot.subsystems.turret.TurretIOSim;
-import frc.robot.subsystems.turret.TurretIOSpark;
-import frc.robot.subsystems.vision.AprilTagIO;
-import frc.robot.subsystems.vision.AprilTagIOPhotonVision;
-import frc.robot.subsystems.vision.AprilTagIOSim;
-import frc.robot.subsystems.vision.AprilTagVision;
-import frc.robot.subsystems.vision.VisionConstants;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -56,12 +33,6 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 public class RobotContainer {
   // Subsystems
-  private final Drive drive;
-  @SuppressWarnings("unused")
-  private final AprilTagVision aprilTagVision;
-  private final Turret turret;
-  private final Superstructure superstructure;
-  private final Intake intake;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -75,91 +46,26 @@ public class RobotContainer {
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
-        drive =
-            new Drive(
-                new GyroIONavX(),
-                new ModuleIOSpark(0),
-                new ModuleIOSpark(1),
-                new ModuleIOSpark(2),
-                new ModuleIOSpark(3));
-        aprilTagVision = 
-            new AprilTagVision(
-                drive::addVisionMeasurement,
-                drive::getChassisSpeeds,
-                new AprilTagIOPhotonVision(VisionConstants.AprilTagCamera1Name, VisionConstants.AprilTagCamera1Transform), 
-                new AprilTagIOPhotonVision(VisionConstants.AprilTagCamera2Name, VisionConstants.AprilTagCamera2Transform));
-        turret = new Turret(new TurretIOSpark(), drive::getPose, drive::getChassisSpeeds);
-        intake = new Intake(new IntakeIOSpark(), turret::getResetting, turret::shooterSpedUp);
         break;
 
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIOSim(),
-                new ModuleIOSim(),
-                new ModuleIOSim(),
-                new ModuleIOSim());
-        aprilTagVision =
-            new AprilTagVision(
-                drive::addVisionMeasurement,
-                drive::getChassisSpeeds,
-                new AprilTagIOSim(VisionConstants.AprilTagCamera1Name, VisionConstants.AprilTagCamera1Transform, drive::getPose),
-                new AprilTagIOSim(VisionConstants.AprilTagCamera2Name, VisionConstants.AprilTagCamera2Transform, drive::getPose)
-            );
-        turret = new Turret(new TurretIOSim(), drive::getPose, drive::getChassisSpeeds);
-        intake = new Intake(new IntakeIOSim(), turret::getResetting, turret::shooterSpedUp);
         break;
 
       default:
         // Replayed robot, disable IO implementations
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
-        aprilTagVision = 
-            new AprilTagVision(
-                drive::addVisionMeasurement,
-                drive::getChassisSpeeds,
-                new AprilTagIO() {},
-                new AprilTagIO() {}
-            );
-        turret = new Turret(new TurretIO() {}, drive::getPose, drive::getChassisSpeeds);
-        intake = new Intake(new IntakeIO() {}, turret::getResetting, turret::shooterSpedUp);
         break;
     }
 
-    superstructure = new Superstructure(drive, aprilTagVision, turret, intake);
 
     //Add Named Comands here
-    NamedCommands.registerCommand("start", superstructure.setWantedStateCommand(Superstructure.WantedState.SHOOTING));
-    NamedCommands.registerCommand("reverse", superstructure.setWantedStateCommand(Superstructure.WantedState.EJECTING));
+    
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
     // Set up SysId routines
-    autoChooser.addOption(
-        "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-    autoChooser.addOption(
-        "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-    autoChooser.addOption(
-        "Drive SysId (Quasistatic Forward)",
-        drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption(
-        "Drive SysId (Quasistatic Reverse)",
-        drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-    autoChooser.addOption(
-        "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption(
-        "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-
-    autoChooser.addOption("Move Forward", 
-        DriveCommands.joystickDrive(drive, () -> 0.0, () -> -Math.sqrt(1/4.2), () -> 0.0));
+   
 
     // Configure the button bindings
     configureButtonBindings();
@@ -173,33 +79,7 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
-    drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
-
-    controller.rightTrigger().onTrue(superstructure.setWantedStateCommand(WantedState.SHOOTING));
-    controller.rightBumper().onTrue(superstructure.setWantedStateCommand(WantedState.PAUSED));
-    controller.leftTrigger().onTrue(superstructure.setWantedStateCommand(WantedState.IDLE));
-    controller.leftBumper().onTrue(superstructure.setWantedStateCommand(WantedState.EJECTING));
-    controller.start().onTrue(superstructure.setWantedStateCommand(WantedState.TESTING));
-    // controller.povUp().onTrue(new InstantCommand(()->{turret.io.setHoodAngle(turret.getHoodAngle()+0.025);}));
-    // controller.povDown().onTrue(new InstantCommand(()->{turret.io.setHoodAngle(turret.getHoodAngle()-0.025);}));
-    // controller.rightBumper().onTrue(new InstantCommand(()->{turret.io.testTurret(turret.getTurretAngle()-0.1);}));
-    // controller.leftBumper().onTrue(new InstantCommand(()->{turret.io.testTurret(turret.getTurretAngle()+0.1);}));
-
-    new Trigger(superstructure::getRumble)
-        .onTrue(new InstantCommand(
-            () -> {controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1);}))
-        .onFalse(new InstantCommand(
-            () -> {controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0);}));
-
-    adjController.leftBumper().onTrue(turret.changeTurretOffset(TurretConstants.turretOffsetChange));
-    adjController.rightBumper().onTrue(turret.changeTurretOffset(-TurretConstants.turretOffsetChange));
-
-    // adjController.a().onTrue(new InstantCommand(()->{turret.io.testTurret(0.0);}));
+    
   }
 
   /**
@@ -209,9 +89,5 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return autoChooser.get();
-  }
-
-  public void setCurrentLimit(int limit) {
-    drive.setCurrentLimit(limit);
   }
 }
