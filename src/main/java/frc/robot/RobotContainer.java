@@ -23,6 +23,10 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.subsystems.swerve.Drive_Constants;
+import frc.robot.subsystems.swerve.Module_IO_Real;
+import frc.robot.subsystems.swerve.Swerve;
+
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -33,7 +37,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  */
 public class RobotContainer {
   // Subsystems
-
+    private final Swerve swerve;
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController adjController = new CommandXboxController(1);
@@ -46,6 +50,17 @@ public class RobotContainer {
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
+        swerve = new Swerve(
+            new Module_IO_Real
+            (Drive_Constants.frontLeftDriveCanId, Drive_Constants.frontLeftTurnCanId),
+            new Module_IO_Real
+            (Drive_Constants.frontRightDriveCanId, Drive_Constants.frontRightTurnCanId),
+            new Module_IO_Real
+            (Drive_Constants.backLeftDriveCanId, Drive_Constants.backLeftTurnCanId),
+            new Module_IO_Real
+            (Drive_Constants.backRightDriveCanId, Drive_Constants.backRightTurnCanId)
+            
+        );
         break;
 
       case SIM:

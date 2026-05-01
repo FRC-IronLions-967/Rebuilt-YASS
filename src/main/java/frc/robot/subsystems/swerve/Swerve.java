@@ -13,6 +13,8 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 
+import java.util.function.DoubleSupplier;
+
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 
@@ -29,13 +31,20 @@ public class Swerve extends SubsystemBase {
     SwerveDriveKinematics kinematics;
     SwerveDriveOdometry odometry;
     AHRS gyro; // Gyroscope.
-    Module_IO_Real[] swerveModules; // Swerve modules.
-    
+    Module_IO[] swerveModules; // Swerve modules.
+    Module_IO_InputsAutoLogged inputs[];
     // Constructor
-    public Swerve() {
+    public Swerve(Module_IO modulefl, Module_IO modulefr, Module_IO modulebl, Module_IO modulebr) {
     
-        swerveModules = new Module_IO_Real[4]; // Create swerve modules.
-        
+        inputs[0] = new Module_IO_InputsAutoLogged();
+        inputs[1] = new Module_IO_InputsAutoLogged();
+        inputs[2] = new Module_IO_InputsAutoLogged();
+        inputs[3] = new Module_IO_InputsAutoLogged();
+        swerveModules[0] = modulefl;
+        swerveModules[1] = modulefr;
+        swerveModules[2] = modulebl;
+        swerveModules[3] = modulebr;
+    
         // Create SwerveDriveKinematics object
         // 10in from center of robot to center of wheel.
         // 10in is converted to meters to work with object.
@@ -53,19 +62,31 @@ public class Swerve extends SubsystemBase {
         odometry = new SwerveDriveOdometry(
             kinematics,
             Rotation2d.fromDegrees(gyro.getAngle()), // returns current gyro reading as a Rotation2d
-            new SwerveModulePosition[]{new SwerveModulePosition(), new SwerveModulePosition(), new SwerveModulePosition(), new SwerveModulePosition}
+            new SwerveModulePosition[]{new SwerveModulePosition(), new SwerveModulePosition(), new SwerveModulePosition(), new SwerveModulePosition()}
             // Front-Left, Front-Right, Back-Left, Back-Right
         );
             
     }
+
+    @Override
+    public void periodic() {
+        for (int i = 0; i <= 3; i++) {
+            swerveModules[i].updateInputs(inputs[i]);
+        }
+    }
     
     // Simple drive function
-    public void drive() {
+    public void drive(DoubleSupplier x_Speed, DoubleSupplier y_Speed, DoubleSupplier rotation_Speed) {
         // Create test ChassisSpeeds going X = 14in, Y=4in, and spins at 30deg per second.
-        ChassisSpeeds testSpeeds = new ChassisSpeeds(Units.inchesToMeters(14), Units.inchesToMeters(4), Units.degreesToRadians(30));
+        Translation2d speed_Vector = new Translation2d(x_Speed.getAsDouble(), y_Speed.getAsDouble());
+        ChassisSpeeds speeds = new ChassisSpeeds(
+            speed_Vector.getX() *Drive_Constants.maxSpeedMetersPerSec, 
+            speed_Vector.getY() *Drive_Constants.maxSpeedMetersPerSec, 
+            rotation_Speed.getAsDouble() * 3.84644
+            );
         
         // Get the SwerveModuleStates for each module given the desired speeds.
-        SwerveModuleState[] swerveModuleStates = kinematics.toSwerveModuleStates(testSpeeds);
+        SwerveModuleState[] swerveModuleStates = kinematics.toSwerveModuleStates(speeds);
         // Output order is Front-Left, Front-Right, Back-Left, Back-Right
         
         swerveModules[0].setState(swerveModuleStates[0]);
@@ -77,13 +98,13 @@ public class Swerve extends SubsystemBase {
     // Fetch the current swerve module positions.
     public SwerveModulePosition[] getCurrentSwerveModulePositions() {
         return new SwerveModulePosition[]{
-            new SwerveModulePosition(swerveModules[0].getDistance(), swerveModules[0].getAngle()), // Front-Left
-            new SwerveModulePosition(swerveModules[1].getDistance(), swerveModules[1].getAngle()), // Front-Right
-            new SwerveModulePosition(swerveModules[2].getDistance(), swerveModules[2].getAngle()), // Back-Left
-            new SwerveModulePosition(swerveModules[3].getDistance(), swerveModules[3].getAngle())  // Back-Right
+            new SwerveModulePosition(inputs[0].drive_Position, inputs[0].turn_Angle), // Front-Left
+            new SwerveModulePosition(inputs[1].drive_Position, inputs[1].turn_Angle), // Front-Right
+            new SwerveModulePosition(inputs[2].drive_Position, inputs[2].turn_Angle), // Back-Left
+            new SwerveModulePosition(inputs[3].drive_Position, inputs[3].turn_Angle)  // Back-Right
         };
     }
-
+                               
     public void updateOdometry() {
         // Update the odometry every run.
         odometry.update(Rotation2d.fromDegrees(gyro.getAngle()), getCurrentSwerveModulePositions());

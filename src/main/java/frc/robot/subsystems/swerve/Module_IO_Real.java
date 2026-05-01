@@ -12,120 +12,118 @@ import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
 
 
 public class Module_IO_Real implements Module_IO {
 
     private SparkMax driveMotor;
-    private SparkMax steerMotor;
+    private SparkMax turnMotor;
     private AbsoluteEncoder absoluteEncoder;
-    private SparkMaxPIDController drivingPIDController;
-    private SparkMaxPIDController turningPIDController;
+    private SparkClosedLoopController drivingController;
+    private SparkClosedLoopController turningController;
     private RelativeEncoder driveEncoder;
-    private RelativeEncoder steerEncoder;
+    private RelativeEncoder turnEncoder;
+    protected SparkMaxConfig driveConfig;
     
-    public SwerveModule(int driveMotorCANID, int steerMotorCANID, int cancoderCANID)
+    public Module_IO_Real(int driveMotorCANID, int turnMotorCANID)
     {
         driveMotor = new SparkMax(driveMotorCANID, MotorType.kBrushless);
-        steerMotor = new SparkMax(steerMotorCANID, MotorType.kBrushless);
-        absoluteEncoder = steerMotor.getAbsoluteEncoder();
+        turnMotor = new SparkMax(turnMotorCANID, MotorType.kBrushless);
+        absoluteEncoder = turnMotor.getAbsoluteEncoder();
         
         // Get the PID Controllers
-        drivingPIDController = driveMotor.getPIDController();
-        turningPIDController = steerMotor.getPIDController();
+        drivingController = driveMotor.getClosedLoopController();
+        turningController = turnMotor.getClosedLoopController();
         
         // Get the encoders
-        driveEncoder = driveMotor.getEncoder():
-        steerEncoder = steerMotor.getEncoder();
-        
-        // Reset everything to factory default
-        driveMotor.restoreFactoryDefaults();
-        steerMotor.restoreFactoryDefaults();
-        absoluteEncoder.getConfigurator().apply(new CANcoderConfiguration());
+        driveEncoder = driveMotor.getEncoder();
+        turnEncoder = turnMotor.getEncoder();
         
         // Continue configuration here..
         
-        // CANcoder Configuration
-        CANcoderConfigurator cfg = encoder.getConfigurator();
-        cfg.apply(new CANcoderConfiguration());
-        MagnetSensorConfigs  magnetSensorConfiguration = new MagnetSensorConfigs();
-        cfg.refresh(magnetSensorConfiguration);
-        cfg.apply(magnetSensorConfiguration
-                  .withAbsoluteSensorRange(AbsoluteSensorRangeValue.Unsigned_0To1)
-                  .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive));
+        // turning Motor Configuration
+        driveConfig = new SparkMaxConfig();
+    driveConfig
+        .idleMode(IdleMode.kBrake)
+        .smartCurrentLimit(Drive_Constants.driveMotorCurrentLimit)
+        .voltageCompensation(12.0);
+    driveConfig
+        .encoder
+        .positionConversionFactor(Drive_Constants.driveEncoderPositionFactor)
+        .velocityConversionFactor(Drive_Constants.driveEncoderVelocityFactor)
+        .uvwMeasurementPeriod(10)
+        .uvwAverageDepth(2);
+    driveConfig
+        .closedLoop
+        .feedbackSensor(com.revrobotics.spark.FeedbackSensor.kPrimaryEncoder)
+        .pid(
+            Drive_Constants.driveKp.get(), 0.0,
+            Drive_Constants.driveKd.get());
+    driveConfig
+        .signals
+        .primaryEncoderPositionAlwaysOn(true)
+        .primaryEncoderPositionPeriodMs((int) (1000.0 / Drive_Constants.odometryFrequency))
+        .primaryEncoderVelocityAlwaysOn(true)
+        .primaryEncoderVelocityPeriodMs(20)
+        .appliedOutputPeriodMs(20)
+        .busVoltagePeriodMs(20)
+        .outputCurrentPeriodMs(20);
+        driveMotor.configure(
+                driveConfig, com.revrobotics.ResetMode.kResetSafeParameters, com.revrobotics.PersistMode.kPersistParameters);
 
-        // Steering Motor Configuration
-        steerMotor.setInverted(false);
-        turningPIDController.setFeedbackDevice(steerEncoder);
-        // Apply position and velocity conversion factors for the turning encoder. We
-        // want these in radians and radians per second to use with WPILib's swerve
-        // APIs.
-        steerEncoder.setPositionConversionFactor(ModuleConstants.kTurningEncoderPositionFactor);
-        steerEncoder.setVelocityConversionFactor(ModuleConstants.kTurningEncoderVelocityFactor);
-        // Enable PID wrap around for the turning motor. This will allow the PID
-        // controller to go through 0 to get to the setpoint i.e. going from 350 degrees
-        // to 10 degrees will go through 0 rather than the other direction which is a
-        // longer route.
-        turningPIDController.setPositionPIDWrappingEnabled(true);
-        turningPIDController.setPositionPIDWrappingMinInput(0);
-        turningPIDController.setPositionPIDWrappingMaxInput(90);
-        // Set the PID gains for the turning motor. Note these are example gains, and you
-        // may need to tune them for your own robot!
-        turningPIDController.setP(ModuleConstants.kTurningP);
-        turningPIDController.setI(ModuleConstants.kTurningI);
-        turningPIDController.setD(ModuleConstants.kTurningD);
-        turningPIDController.setFF(ModuleConstants.kTurningFF);
-        
-        // Drive Motor Configuration
-        driveMotor.setInverted(false);
-        drivingPIDController.setFeedbackDevice(driveEncoder);
-        // Apply position and velocity conversion factors for the driving encoder. The
-        // native units for position and velocity are rotations and RPM, respectively,
-        // but we want meters and meters per second to use with WPILib's swerve APIs.        
-        driveEncoder.setPositionConversionFactor(ModuleConstants.kDrivingEncoderPositionFactor);        
-        driveEncoder.setVelocityConversionFactor(ModuleConstants.kDrivingEncoderVelocityFactor);
-        // Set the PID gains for the driving motor. Note these are example gains, and you
-        // may need to tune them for your own robot!
-        drivingPIDController.setP(ModuleConstants.kDrivingP);
-        drivingPIDController.setI(ModuleConstants.kDrivingI);
-        drivingPIDController.setD(ModuleConstants.kDrivingD);
-        drivingPIDController.setFF(ModuleConstants.kDrivingFF);
-        
-        // Save the SPARK MAX configurations. If a SPARK MAX browns out during
-        // operation, it will maintain the above configurations.
-        driveMotor.burnFlash();
-        steerMotor.burnFlash();
-          
-        driveEncoder.setPosition(0);
-        steerEncoder.setPosition(encoder.getAbsolutePosition().refresh().getValue() * 360);
+
+    // Configure turn motor
+    var turnConfig = new SparkMaxConfig();
+    turnConfig
+        .inverted(Drive_Constants.turnInverted)
+        .idleMode(IdleMode.kBrake)
+        .smartCurrentLimit(Drive_Constants.turnMotorCurrentLimit)
+        .voltageCompensation(12.0);
+    turnConfig
+        .absoluteEncoder
+        .inverted(Drive_Constants.turnEncoderInverted)
+        .positionConversionFactor(Drive_Constants.turnEncoderPositionFactor)
+        .velocityConversionFactor(Drive_Constants.turnEncoderVelocityFactor)
+        .averageDepth(2);
+    turnConfig
+        .closedLoop
+        .feedbackSensor(com.revrobotics.spark.FeedbackSensor.kAbsoluteEncoder)
+        .positionWrappingEnabled(true)
+        .positionWrappingInputRange(Drive_Constants.turnPIDMinInput, Drive_Constants.turnPIDMaxInput)
+        .pid(Drive_Constants.turnKp.get(), 0.0, Drive_Constants.turnKd.get());
+    turnConfig
+        .signals
+        .absoluteEncoderPositionAlwaysOn(true)
+        .absoluteEncoderPositionPeriodMs((int) (1000.0 / Drive_Constants.odometryFrequency))
+        .absoluteEncoderVelocityAlwaysOn(true)
+        .absoluteEncoderVelocityPeriodMs(20)
+        .appliedOutputPeriodMs(20)
+        .busVoltagePeriodMs(20)
+        .outputCurrentPeriodMs(20);
+        turnMotor.configure(
+                turnConfig, com.revrobotics.ResetMode.kResetSafeParameters, com.revrobotics.PersistMode.kPersistParameters);
+        }
+
+
+    @Override
+    public void updateInputs(Module_IO_Inputs inputs) {
+        inputs.drive_Position = driveEncoder.getPosition();
+        inputs.turn_Angle = Rotation2d.fromDegrees(turnEncoder.getPosition());
     }
-    
-    
-    /**
-    Get the distance in meters.
-    */
-    public double getDistance()
-    {
-        return driveEncoder.getPosition();
-    }
-    
-    /**
-    Get the angle.
-    */
-    public Rotation2d getAngle()
-    {
-          return Rotation2d.fromDegrees(steerEncoder.getPosition());
-    }
-    
+       
     /**
     Set the swerve module state.
     @param state The swerve module state to set.
     */
+    @Override
     public void setState(SwerveModuleState state)
     {
-          turningPIDController.setReference(state.angle.getDegrees(), ControlType.kPosition);
-          drivingPIDController.setReference(state.speedMetersPerSecond, ControlType.kVelocity);
+          turningController.setSetpoint(state.angle.getDegrees(), ControlType.kPosition);
+          drivingController.setSetpoint(state.speedMetersPerSecond, ControlType.kVelocity);
     }
 
 }
