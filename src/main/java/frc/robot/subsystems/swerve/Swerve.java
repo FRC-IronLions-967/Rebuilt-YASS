@@ -76,7 +76,11 @@ public class Swerve extends SubsystemBase {
     }
     
     // Simple drive function
-    public void drive(DoubleSupplier x_Speed, DoubleSupplier y_Speed, DoubleSupplier rotation_Speed) {
+    public void drive(
+        DoubleSupplier x_Speed, 
+        DoubleSupplier y_Speed, 
+        DoubleSupplier rotation_Speed) 
+        {
         // Create test ChassisSpeeds going X = 14in, Y=4in, and spins at 30deg per second.
         Translation2d speed_Vector = new Translation2d(x_Speed.getAsDouble(), y_Speed.getAsDouble());
         ChassisSpeeds speeds = new ChassisSpeeds(
@@ -104,6 +108,8 @@ public class Swerve extends SubsystemBase {
             new SwerveModulePosition(inputs[3].drive_Position, inputs[3].turn_Angle)  // Back-Right
         };
     }
+
+    
                                
     public void updateOdometry() {
         // Update the odometry every run.
