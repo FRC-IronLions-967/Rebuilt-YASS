@@ -14,16 +14,13 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.subsystems.swerve.Drive_Constants;
+import frc.robot.subsystems.swerve.Module_IO;
 import frc.robot.subsystems.swerve.Module_IO_Real;
 import frc.robot.subsystems.swerve.Swerve;
 
@@ -35,9 +32,12 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
-public class RobotContainer {
+public class Robot_Container {
   // Subsystems
+    @SuppressWarnings ("unused")
     private final Swerve swerve;
+    
+    
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController adjController = new CommandXboxController(1);
@@ -46,7 +46,7 @@ public class RobotContainer {
   private final LoggedDashboardChooser<Command> autoChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
-  public RobotContainer() {
+  public Robot_Container() {
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
@@ -65,10 +65,20 @@ public class RobotContainer {
 
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
+        swerve = new Swerve(
+            new Module_IO() {},
+            new Module_IO() {},
+            new Module_IO() {},
+            new Module_IO() {}   );
         break;
 
       default:
         // Replayed robot, disable IO implementations
+        swerve = new Swerve(
+            new Module_IO() {},
+            new Module_IO() {},
+            new Module_IO() {},
+            new Module_IO() {}   );
         break;
     }
 
