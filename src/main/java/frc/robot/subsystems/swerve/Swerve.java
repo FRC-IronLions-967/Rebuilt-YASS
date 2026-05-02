@@ -20,6 +20,7 @@ import com.studica.frc.AHRS.NavXComType;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
@@ -81,8 +82,10 @@ public class Swerve extends SubsystemBase {
         DoubleSupplier y_Speed, 
         DoubleSupplier rotation_Speed) 
         {
-        // Create test ChassisSpeeds going X = 14in, Y=4in, and spins at 30deg per second.
-        Translation2d speed_Vector = new Translation2d(x_Speed.getAsDouble(), y_Speed.getAsDouble());
+        
+        Translation2d speed_Vector = new Translation2d(
+            x_Speed.getAsDouble(), 
+            y_Speed.getAsDouble());
         ChassisSpeeds speeds = new ChassisSpeeds(
             speed_Vector.getX() *Drive_Constants.maxSpeedMetersPerSec, 
             speed_Vector.getY() *Drive_Constants.maxSpeedMetersPerSec, 
