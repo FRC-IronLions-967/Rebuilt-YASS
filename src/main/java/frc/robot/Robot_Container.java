@@ -18,6 +18,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.swerve.Drive_Constants;
 import frc.robot.subsystems.swerve.Module_IO;
@@ -106,7 +107,14 @@ public class Robot_Container {
    */
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
-      
+      swerve.setDefaultCommand(
+        Commands.run(() -> {
+          swerve.drive(
+            () -> -controller.getLeftY(), 
+            () -> -controller.getLeftX(),
+            () -> -controller.getRightX());
+        }, swerve)
+      );
   }
 
   /**
